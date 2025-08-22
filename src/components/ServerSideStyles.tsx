@@ -5,11 +5,19 @@ interface ServerSideStylesProps {
 }
 
 export function ServerSideStyles({ predictions }: ServerSideStylesProps) {
+  console.log("ServerSideStyles rendering with", predictions?.length || 0, "predictions");
+  
+  // Handle empty or invalid predictions gracefully
+  if (!predictions || !Array.isArray(predictions)) {
+    console.log("ServerSideStyles: No valid predictions, returning null");
+    return null;
+  }
+
   // Generate CSS rules from predictions
   const cssRules: string[] = [];
 
   predictions.forEach((prediction) => {
-    if (prediction.type !== 'visual' || !prediction.config) {
+    if (!prediction || prediction.type !== 'visual' || !prediction.config) {
       return;
     }
 
@@ -47,9 +55,11 @@ export function ServerSideStyles({ predictions }: ServerSideStylesProps) {
   });
 
   if (cssRules.length === 0) {
+    console.log("ServerSideStyles: No CSS rules generated, returning null");
     return null;
   }
 
+  console.log("ServerSideStyles: Generated", cssRules.length, "CSS rules");
   return (
     <style
       dangerouslySetInnerHTML={{

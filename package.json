@@ -10,7 +10,7 @@
     "format": "biome format --write"
   },
   "dependencies": {
-    "@ezbot-ai/javascript-sdk": "^1.1.0",
+    "@ezbot-ai/javascript-sdk": "file:../javascript-sdk",
     "next": "15.5.0",
     "react": "19.1.0",
     "react-dom": "19.1.0"

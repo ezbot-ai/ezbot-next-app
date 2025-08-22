@@ -5,16 +5,17 @@ interface DynamicContentProps {
   selector: string;
   children: React.ReactNode;
   className?: string;
+  id?: string;
 }
 
-export function DynamicContent({ predictions, selector, children, className }: DynamicContentProps) {
+export function DynamicContent({ predictions, selector, children, className, id }: DynamicContentProps) {
   // Find predictions that affect this component
   const relevantPrediction = predictions.find(
     (pred) => pred.type === 'visual' && pred.config?.selector === selector
   );
 
   if (!relevantPrediction || !relevantPrediction.config) {
-    return <div className={className}>{children}</div>;
+    return <div className={className} id={id}>{children}</div>;
   }
 
   const { action } = relevantPrediction.config;
@@ -22,7 +23,7 @@ export function DynamicContent({ predictions, selector, children, className }: D
 
   // Handle text content changes
   if (action === 'setText') {
-    return <div className={className}>{value}</div>;
+    return <div className={className} id={id}>{value}</div>;
   }
 
   // Handle HTML content changes
@@ -30,6 +31,7 @@ export function DynamicContent({ predictions, selector, children, className }: D
     return (
       <div 
         className={className}
+        id={id}
         dangerouslySetInnerHTML={{ __html: value }}
       />
     );
@@ -47,5 +49,5 @@ export function DynamicContent({ predictions, selector, children, className }: D
       .join(' ');
   }
 
-  return <div className={finalClassName}>{children}</div>;
+  return <div className={finalClassName} id={id}>{children}</div>;
 }
