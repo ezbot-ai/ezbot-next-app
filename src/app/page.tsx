@@ -1,46 +1,95 @@
 import Image from "next/image";
+import { getServerContext } from "../lib/server-context";
+import { ClientOnlyEzbot, DynamicContent } from "../components/ClientOnlyEzbot";
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  // Get server-side context (predictions + headers)
+  const resolvedSearchParams = await searchParams;
+  console.log("Starting prediction")
+  
+  let serverContext;
+  try {
+    serverContext = await getServerContext(4, {}, "/");
+    console.log("Made prediction - predictions:", serverContext.predictions.length);
+  } catch (error) {
+    console.error("Failed to get server context:", error);
+    serverContext = { predictions: [] };
+  }
+
+  console.log("About to render page with", serverContext.predictions.length, "predictions");
+  console.log("Starting JSX render");
+
+  console.log("About to render EzbotProvider");
+  
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
+    <ClientOnlyEzbot projectId={4} predictions={serverContext.predictions}>
+      <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
+        <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+          <Image
+            className="dark:invert"
+            src="/next.svg"
+            alt="Next.js logo"
+            width={180}
+            height={38}
+            priority
+          />
+          
+          {/* Hero section with dynamic content */}
+          <div className="row text-center">
+            <DynamicContent 
+              predictions={serverContext.predictions} 
+              selector=".row #hero-headline"
+              className="text-4xl font-bold mb-6"
+              id="hero-headline"
+            >
+              Transform Your Business with AI
+            </DynamicContent>
+
+          <div className="col-md-7 mx-auto">
+            <DynamicContent 
+              predictions={serverContext.predictions} 
+              selector=".row > .col-md-7 > p"
+              className="text-xl text-gray-600 mb-8 max-w-2xl"
+            >
+              Discover how our platform helps businesses optimize their user experience through intelligent testing and personalization.
+            </DynamicContent>
+          </div>
+        </div>
+
         <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
           <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
+            Server-side predictions are fetched during SSR
           </li>
           <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
+            Visual changes are applied before the page loads
+          </li>
+          <li className="tracking-[-.01em] mt-2">
+            Client-side tracking is initialized after hydration
           </li>
         </ol>
 
+        {/* Predictions debug info */}
+        <div className="predictions-debug bg-gray-100 dark:bg-gray-800 p-4 rounded-lg mt-8">
+          <h3 className="font-semibold mb-2">Server-side Predictions Debug:</h3>
+          <pre className="text-xs overflow-auto">
+            {JSON.stringify(serverContext.predictions, null, 2)}
+          </pre>
+        </div>
+
         <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
+          <DynamicContent 
+            predictions={serverContext.predictions} 
+            selector="#hero-cta"
             className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            id="hero-cta"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
+            Get Started Today
+          </DynamicContent>
+          
           <a
             className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
             href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
@@ -97,7 +146,8 @@ export default function Home() {
           />
           Go to nextjs.org →
         </a>
-      </footer>
-    </div>
+        </footer>
+      </div>
+    </ClientOnlyEzbot>
   );
 }
