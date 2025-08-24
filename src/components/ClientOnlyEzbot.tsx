@@ -3,10 +3,8 @@
 import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import {initEzbotWithServerSidePredictions, startActivityTracking, trackPageView} from '@ezbot-ai/javascript-sdk';
-import { Prediction } from '../lib/server-predictions';
-import {
-  ActivityTrackingConfiguration,
-} from '@snowplow/browser-tracker-core';
+import type { Prediction } from '@ezbot-ai/javascript-sdk';
+
 
 // Dynamically import components that need predictions with no SSR
 const ServerSideStyles = dynamic(

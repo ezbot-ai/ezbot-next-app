@@ -1,9 +1,28 @@
 // Server-side context utilities for Next.js
 import { headers } from "next/headers";
-import { getServerPredictions, Prediction, PredictionsParams } from "./server-predictions";
+import {
+  createEzbotClient,
+  Prediction,
+  PredictionsParams,
+  RequestMeta,
+  extractUtmFromSearchParams,
+} from "@ezbot-ai/javascript-sdk";
 
 export interface ServerContext {
   predictions: Prediction[];
+}
+
+// Create a singleton client for server usage (inlined from server-predictions)
+const client = createEzbotClient();
+
+/**
+ * Fetch predictions server-side using the SDK client
+ */
+export async function getServerPredictions(
+  params: PredictionsParams,
+  meta?: RequestMeta
+): Promise<Array<Prediction>> {
+  return client.getPredictions(params, meta);
 }
 
 /**
@@ -18,34 +37,40 @@ export async function getServerContext(
   const headersList = await headers();
   const userAgent = headersList.get("user-agent") || "";
   const referer = headersList.get("referer") || "";
+  const origin = referer ? new URL(referer).origin : undefined;
   
   // Extract UTM parameters from search params
-  const utmParams = {
-    utmSource: Array.isArray(searchParams.utm_source) 
-      ? searchParams.utm_source[0] 
-      : searchParams.utm_source,
-    utmMedium: Array.isArray(searchParams.utm_medium) 
-      ? searchParams.utm_medium[0] 
-      : searchParams.utm_medium,
-    utmCampaign: Array.isArray(searchParams.utm_campaign) 
-      ? searchParams.utm_campaign[0] 
-      : searchParams.utm_campaign,
-    utmContent: Array.isArray(searchParams.utm_content) 
-      ? searchParams.utm_content[0] 
-      : searchParams.utm_content,
-    utmTerm: Array.isArray(searchParams.utm_term) 
-      ? searchParams.utm_term[0] 
-      : searchParams.utm_term,
-  };
+  const utmParams = extractUtmFromSearchParams(searchParams);
 
-  const predictions = await getServerPredictions({
-    projectId,
-    pageUrlPath,
-    userAgent,
-    referrer: referer,
-    ...utmParams,
-    ...additionalParams,
-  }).catch((error) => {
+  // Whitelist a few safe headers to forward
+  const allowedHeaderNames = new Set([
+    'accept',
+    'accept-language',
+    'x-forwarded-for',
+    'x-forwarded-host',
+    'x-forwarded-proto',
+  ]);
+  const forwardedHeaders: Record<string, string> = {};
+  for (const [key, value] of headersList.entries()) {
+    if (allowedHeaderNames.has(key)) forwardedHeaders[key] = value;
+  }
+
+  const predictions = await getServerPredictions(
+    {
+      projectId,
+      pageUrlPath,
+      userAgent,
+      referrer: referer,
+      ...utmParams,
+      ...additionalParams,
+    },
+    {
+      userAgent,
+      referrer: referer,
+      origin,
+      headers: forwardedHeaders,
+    }
+  ).catch((error) => {
     console.error("Failed to fetch server predictions:", error);
     return [];
   });

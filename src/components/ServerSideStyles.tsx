@@ -1,4 +1,20 @@
-import { Prediction } from '../lib/server-predictions';
+import type { Prediction } from '@ezbot-ai/javascript-sdk';
+import { predictionsToCss } from '@ezbot-ai/javascript-sdk';
+
+/**
+ * ServerSideStyles
+ *
+ * Converts visual predictions into CSS rules and injects them into the page via a
+ * single `<style>` tag. Use this for global visual adjustments such as hide/show,
+ * setting CSS properties, or adding global CSS rules. Ideal for SSR so styles apply
+ * before hydration.
+ *
+ * Example
+ * ```tsx
+ * // In your page/layout where predictions are available server-side
+ * <ServerSideStyles predictions={predictions} />
+ * ```
+ */
 
 interface ServerSideStylesProps {
   predictions: Prediction[];
@@ -13,57 +29,19 @@ export function ServerSideStyles({ predictions }: ServerSideStylesProps) {
     return null;
   }
 
-  // Generate CSS rules from predictions
-  const cssRules: string[] = [];
+  // Generate CSS string from predictions via SDK helper
+  const css = predictionsToCss(predictions);
 
-  predictions.forEach((prediction) => {
-    if (!prediction || prediction.type !== 'visual' || !prediction.config) {
-      return;
-    }
-
-    const { selector, action, attribute } = prediction.config;
-    const value = prediction.value;
-
-    switch (action) {
-      case 'hide':
-        cssRules.push(`${selector} { display: none !important; }`);
-        break;
-      case 'show':
-        cssRules.push(`${selector} { display: block !important; }`);
-        break;
-      case 'setStyle':
-        if (attribute) {
-          cssRules.push(`${selector} { ${attribute}: ${value} !important; }`);
-        }
-        break;
-      case 'setFontSize':
-        cssRules.push(`${selector} { font-size: ${value} !important; }`);
-        break;
-      case 'setFontColor':
-        cssRules.push(`${selector} { color: ${value} !important; }`);
-        break;
-      case 'setBackgroundColor':
-        cssRules.push(`${selector} { background-color: ${value} !important; }`);
-        break;
-      case 'setVisibility':
-        cssRules.push(`${selector} { visibility: ${value} !important; }`);
-        break;
-      case 'addGlobalCSS':
-        cssRules.push(value);
-        break;
-    }
-  });
-
-  if (cssRules.length === 0) {
+  if (!css || css.length === 0) {
     console.log("ServerSideStyles: No CSS rules generated, returning null");
     return null;
   }
 
-  console.log("ServerSideStyles: Generated", cssRules.length, "CSS rules");
+  console.log("ServerSideStyles: Generated CSS for predictions");
   return (
     <style
       dangerouslySetInnerHTML={{
-        __html: cssRules.join('\n'),
+        __html: css,
       }}
     />
   );
