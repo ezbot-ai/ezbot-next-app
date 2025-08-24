@@ -7,13 +7,26 @@ export default async function Home({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  // Get server-side context (predictions + headers)
   const resolvedSearchParams = await searchParams;
   console.log("Starting prediction")
   
   let serverContext;
   try {
-    serverContext = await getServerContext(4, {}, "/");
+    /**
+     * CRITICAL: Server-side predictions fetch
+     * ---------------------------------------
+     * When using ezbot with server-side predictions, it is EXTREMELY important
+     * to ALSO initialize client-side tracking with THESE SAME predictions at
+     * the application level. Predictions are application-level state, and
+     * tracking happens client-side with the predictions injected into the
+     * tracker context.
+     *
+     * See below where <ClientOnlyEzbot> is initialized with
+     * `predictions={serverContext.predictions}` — do not omit this, or ezbot
+     * will not function correctly long term (events won't carry the same
+     * prediction context).
+     */
+    serverContext = await getServerContext(4, resolvedSearchParams, "/");
     console.log("Made prediction - predictions:", serverContext.predictions.length);
   } catch (error) {
     console.error("Failed to get server context:", error);
@@ -26,6 +39,14 @@ export default async function Home({
   console.log("About to render EzbotProvider");
   
   return (
+    /**
+      * CRITICAL: Client-side initialization with server-side predictions
+      * ----------------------------------------------------------------
+      * Initialize the client-side tracker at the application level and pass in
+      * the EXACT predictions that were computed on the server. This ensures the
+      * browser tracker has the same prediction context, so all client-side
+      * events are tagged consistently.
+      */
     <ClientOnlyEzbot projectId={4} predictions={serverContext.predictions}>
       <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
         <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">

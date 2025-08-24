@@ -1,4 +1,24 @@
-import { Prediction } from '../lib/server-predictions';
+import type { Prediction } from '@ezbot-ai/javascript-sdk';
+import { getVisualForSelector } from '@ezbot-ai/javascript-sdk';
+
+/**
+ * DynamicContent
+ * 
+ * Renders a wrapper <div> whose contents/classes can be modified based on a matching
+ * visual prediction (by `config.selector`). Use this when you want targeted text or
+ * HTML changes or to add/remove classes for a specific block.
+ *
+ * Example
+ * ```tsx
+ * <DynamicContent
+ *   predictions={predictions}
+ *   selector=".hero-title"
+ *   className="hero-title text-2xl font-bold"
+ * >
+ *   Default Title
+ * </DynamicContent>
+ * ```
+ */
 
 interface DynamicContentProps {
   predictions: Prediction[];
@@ -10,9 +30,7 @@ interface DynamicContentProps {
 
 export function DynamicContent({ predictions, selector, children, className, id }: DynamicContentProps) {
   // Find predictions that affect this component
-  const relevantPrediction = predictions.find(
-    (pred) => pred.type === 'visual' && pred.config?.selector === selector
-  );
+  const relevantPrediction = getVisualForSelector(predictions, selector);
 
   if (!relevantPrediction || !relevantPrediction.config) {
     return <div className={className} id={id}>{children}</div>;
